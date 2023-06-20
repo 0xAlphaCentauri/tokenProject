@@ -22,7 +22,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let filter = Filter::new().address(address).event("PairCreated(address,address,address,uint256)").from_block(17519823);
     let logs = provider.get_logs(&filter).await?;
     for log in logs.iter() {
-        println!("{:?}",log);
+        let token0 =  Address::from(log.topics[1]);
+        let token1 =  Address::from(log.topics[2]);
+        let pairadd = Address::from(&log.data[12..32].try_into()?);
+        println!("Pool = {:?}, token0 = {:?} , token1 = {:?}",pairadd,token0,token1);
     }
     Ok(())
 }
