@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let filter = Filter::new()
         .address(address)
         .event("PairCreated(address,address,address,uint256)")
-        .from_block(block_number);
+        .from_block(17541439);
     let logs = provider.get_logs(&filter).await?;
     for log in logs.iter() {
         let token0 = Address::from(log.topics[1]);
