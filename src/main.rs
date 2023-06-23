@@ -4,6 +4,7 @@ use ethers::{
     providers::{Http, Provider},
     utils::format_units,
 };
+use std::{fs::File, io::{Read, Write}};
 use eyre::Result;
 use std::sync::Arc;
 mod addwebhook;
@@ -28,7 +29,7 @@ abigen!(
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)
     ]"#,
 );
-const HTTP_URL: &str = "http://10.234.32.252:8545";
+const HTTP_URL: &str = "https://eth-mainnet.g.alchemy.com/v2/q7w9I4eLnrn93hzf7bvMixRnnZMvQ7ne";
 const UNISWAP_FACTORY: &str = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
 const WETH_ADDRESS: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 #[tokio::main]
@@ -36,11 +37,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Provider::<Http>::try_from(HTTP_URL)?;
     let provider = Arc::new(provider);
     let block_number: U64 = provider.get_block_number().await?;
+    let mut file = File::open("blocknumber.txt")?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    if contents == block_number.to_string(){
+        println!("We are polling the same block");
+        std::process::exit(1);
+
+    }
     let address: Address = UNISWAP_FACTORY.parse()?;
     let filter = Filter::new()
         .address(address)
         .event("PairCreated(address,address,address,uint256)")
-        .from_block(17534283);
+        .from_block(block_number);
     let logs = provider.get_logs(&filter).await?;
     for log in logs.iter() {
         let token0 = Address::from(log.topics[1]);
@@ -70,5 +79,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     }
+    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open("blocknumber.txt")?;
+    f.write_all(block_number.to_string().as_bytes())?;
+    f.flush()?;
     Ok(())
 }
