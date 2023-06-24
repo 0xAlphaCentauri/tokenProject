@@ -1,4 +1,6 @@
-use ethers::types::Address;
+use std::str::FromStr;
+
+use ethers::types::{Address, U256};
 use dotenv::dotenv;
 use serde_json::json;
 use serde::Deserialize;
@@ -31,8 +33,8 @@ pub async fn send_webhook(
     let client = reqwest::Client::new();
     let etherscan_api_call = reqwest::get(&etherscan_url).await?;
     let etherscan_response : Root = etherscan_api_call.json().await?;
-    println!("{:?}",etherscan_response);
-    let json = json!({
+    let pooled_in_usd = (etherscan_response.result.ethusd.parse::<f64>().unwrap() * pooled_ether.parse::<f64>().unwrap()).round() ; 
+        let json = json!({
         "embeds":[{
             "title":"New Pair Deployed",
             "fields": [
@@ -49,8 +51,9 @@ pub async fn send_webhook(
                     "value" : format!("{}ETH",pooled_ether),
                 },
                 {
-                    "name" : "Pooled Ether",
-                    "value" : format!("{}ETH",pooled_ether),
+                    "name" : "Eth Pooled in USD Value",
+                    "value" : format!("${}",pooled_in_usd.to_string()), 
+
                 },
             ]
 

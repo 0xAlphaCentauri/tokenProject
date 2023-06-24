@@ -4,7 +4,7 @@ use ethers::{
     providers::{Http, Provider},
     utils::format_units,
 };
-use std::{fs::File, io::{Read, Write}};
+//use std::{fs::File, io::{Read, Write}};
 use eyre::Result;
 use std::sync::Arc;
 mod addwebhook;
@@ -36,15 +36,15 @@ const WETH_ADDRESS: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Provider::<Http>::try_from(HTTP_URL)?;
     let provider = Arc::new(provider);
-    let block_number: U64 = provider.get_block_number().await?;
-    let mut file = File::open("blocknumber.txt")?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    if contents == block_number.to_string(){
-        println!("We are polling the same block");
-        std::process::exit(1);
+    //let block_number: U64 = provider.get_block_number().await?;
+   // let mut file = File::open("blocknumber.txt")?;
+   // let mut contents = String::new();
+   // file.read_to_string(&mut contents)?;
+   // if contents == block_number.to_string(){
+   //     println!("We are polling the same block");
+   //     std::process::exit(1);
 
-    }
+   // }
     let address: Address = UNISWAP_FACTORY.parse()?;
     let filter = Filter::new()
         .address(address)
@@ -79,8 +79,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             );
         }
     }
-    let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open("blocknumber.txt")?;
-    f.write_all(block_number.to_string().as_bytes())?;
-    f.flush()?;
+    //let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open("blocknumber.txt")?;
+   // f.write_all(block_number.to_string().as_bytes())?;
+   // f.flush()?;
     Ok(())
 }
