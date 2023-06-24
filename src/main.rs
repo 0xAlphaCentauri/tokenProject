@@ -29,7 +29,7 @@ abigen!(
     function getReserves() external view returns (uint112 reserve0, uint112 reserve1, uint32 blockTimestampLast)
     ]"#,
 );
-const HTTP_URL: &str = "https://eth-mainnet.g.alchemy.com/v2/q7w9I4eLnrn93hzf7bvMixRnnZMvQ7ne";
+const HTTP_URL: &str = "http://10.234.32.252:8545";
 const UNISWAP_FACTORY: &str = "0x5C69bEe701ef814a2B6a3EDD4B1652CB9cc5aA6f";
 const WETH_ADDRESS: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 #[tokio::main]
@@ -49,7 +49,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let filter = Filter::new()
         .address(address)
         .event("PairCreated(address,address,address,uint256)")
-        .from_block(17541439);
+        .from_block(17548050);
     let logs = provider.get_logs(&filter).await?;
     for log in logs.iter() {
         let token0 = Address::from(log.topics[1]);
@@ -62,21 +62,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let liq_0 = format_units(U256::from(liq.0), "ether").unwrap();
             let token1_contract = ERC20::new(token1, provider.clone());
             let token1_symbol: String = token1_contract.symbol().await?;
-            send_webhook(token1_symbol.clone(), pairadd, liq_0.clone()).await?;
             println!(
                 "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH",
                 &token1_symbol, pairadd, liq_0
             );
+            if send_webhook(token1_symbol.clone(), pairadd, liq_0.clone()).await.is_ok() {
+            println!("Webhook sent");
+            }
         } else {
             let liq = pair_contract.get_reserves().await?;
             let liq_1 = format_units(U256::from(liq.1), "ether").unwrap();
             let token0_contract = ERC20::new(token0, provider.clone());
             let token0_symbol: String = token0_contract.symbol().await?;
-            send_webhook(token0_symbol.clone(), pairadd, liq_1.clone()).await?;
             println!(
                 "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH",
                 &token0_symbol, pairadd, liq_1
             );
+            send_webhook(token0_symbol.clone(), pairadd, liq_1.clone()).await?;
         }
     }
     //let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open("blocknumber.txt")?;
