@@ -37,19 +37,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Provider::<Http>::try_from(HTTP_URL)?;
     let provider = Arc::new(provider);
     //let block_number: U64 = provider.get_block_number().await?;
-   // let mut file = File::open("blocknumber.txt")?;
-   // let mut contents = String::new();
-   // file.read_to_string(&mut contents)?;
-   // if contents == block_number.to_string(){
-   //     println!("We are polling the same block");
-   //     std::process::exit(1);
+    // let mut file = File::open("blocknumber.txt")?;
+    // let mut contents = String::new();
+    // file.read_to_string(&mut contents)?;
+    // if contents == block_number.to_string(){
+    //     println!("We are polling the same block");
+    //     std::process::exit(1);
 
-   // }
+    // }
+    // TO-DO  - get proper error propagation over at functions and refactor below If statements ,
+    // this looks to be sendable via a function
     let address: Address = UNISWAP_FACTORY.parse()?;
     let filter = Filter::new()
         .address(address)
-        .event("PairCreated(address,address,address,uint256)")
-        .from_block(17548050);
+        .event("PairCreated(address,address,address,uint256)");
     let logs = provider.get_logs(&filter).await?;
     for log in logs.iter() {
         let token0 = Address::from(log.topics[1]);
@@ -66,8 +67,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH",
                 &token1_symbol, pairadd, liq_0
             );
-            if send_webhook(token1_symbol.clone(), pairadd, liq_0.clone()).await.is_ok() {
-            println!("Webhook sent");
+            if send_webhook(token1_symbol.clone(), pairadd, liq_0.clone())
+                .await
+                .is_ok()
+            {
+                println!("Webhook sent");
             }
         } else {
             let liq = pair_contract.get_reserves().await?;
@@ -82,7 +86,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
     //let mut f = std::fs::OpenOptions::new().write(true).truncate(true).open("blocknumber.txt")?;
-   // f.write_all(block_number.to_string().as_bytes())?;
-   // f.flush()?;
+    // f.write_all(block_number.to_string().as_bytes())?;
+    // f.flush()?;
     Ok(())
 }

@@ -4,11 +4,13 @@ use serde::Deserialize;
 use serde_json::json;
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct EtherscanResponse {
     pub result: ResultEtherscan,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct ResultEtherscan {
     pub ethusd: String,
 }
@@ -17,7 +19,7 @@ pub struct ResultEtherscan {
 #[serde(rename_all = "camelCase")]
 pub struct HoneypotResponse {
     pub simulation_success: bool,
-    pub honeypot_result: HoneypotResult,
+    pub honeypot_result: Option<HoneypotResult>,
     pub simulation_result: SimulationResult,
     pub holder_analysis: HolderAnalysis,
 }
@@ -37,6 +39,7 @@ pub struct SimulationResult {
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct HolderAnalysis {
     pub holders: String,
 }
@@ -56,67 +59,74 @@ pub async fn send_webhook(
         "https://api.honeypot.is/v2/IsHoneypot?address={:?}",
         pairadd
     );
-    let client = reqwest::Client::new();
-    let etherscan_api_call = reqwest::get(&etherscan_url).await?;
-    let etherscan_response: EtherscanResponse = etherscan_api_call.json().await?;
-    let honeypot_api_call = reqwest::get(honeypot_url).await?;
-    let honeypot_response: HoneypotResponse = honeypot_api_call.json().await?;
-    let pooled_in_usd = (etherscan_response.result.ethusd.parse::<f64>().unwrap()
-        * pooled_ether.parse::<f64>().unwrap())
-    .round();
-    /* TO DO - add a filter if the honeypot api simulation is false also fix around the JSON to the
-     * webhook to add more sites like etherscan dextools ETC*/
-    let json = json!({
-          "embeds":[{
-              "color": 0x0099ff,
-              "title": "New Pair Deployed",
-              "fields": [
-              {
-                  "name": "Name",
-                  "value" : format!("{}/WETH",token_name)
-              },
-              {
-                  "name" : "DexScreener",
-                  "value" : format!("[here](https://dexscreener.com/ethereum/{:?})",pairadd)
-              },
-              {
-                  "name" : "Pooled Ether",
-                  "value" : format!("{}ETH",pooled_ether)
-              },
-              {
-                  "name" : "Eth Pooled in USD Value",
-                  "value" : format!("${}",pooled_in_usd.to_string())
+    let honeypot_api_call: HoneypotResponse = reqwest::get(honeypot_url).await?.json().await?;
+    if !honeypot_api_call.simulation_success || honeypot_api_call.honeypot_result.as_ref().unwrap().is_honeypot{
+        Err("Simulation Failed don't even bother sending the hook because it doesn't make sense".try_into()?)
+    }
+    else {
+        let etherscan_api_call = reqwest::get(&etherscan_url).await?;
+        let etherscan_response: EtherscanResponse = etherscan_api_call.json().await?;
+        let pooled_in_usd = (etherscan_response.result.ethusd.parse::<f64>().unwrap()
+            * pooled_ether.parse::<f64>().unwrap())
+            .round();
+        let json = json!({
+            "embeds":[{
+                "color": 0x0099ff,
+                "title": "New Pair Deployed",
+                "fields": [
+                {
+                    "name": "Name",
+                    "value" : format!("{}/WETH",token_name)
+                },
+                {
+                    "name" : "Etherscan",
+                    "value" : format!("[here](https://etherscan.com/address/{:?})",pairadd),
+                    "inline" : true
+                },
+                {
+                    "name" : "DexScreener",
+                    "value" : format!("[here](https://dexscreener.com/ethereum/{:?})",pairadd),
+                    "inline" : true
+                },
+                {
+                    "name" : "Pooled Ether",
+                    "value" : format!("{}ETH",pooled_ether)
+                },
+                {
+                    "name" : "Eth Pooled in USD Value",
+                    "value" : format!("${}",pooled_in_usd.to_string())
 
-               },
-              {
-                  "name" : "Is a Honeypot?",
-                  "value" : honeypot_response.honeypot_result.is_honeypot.to_string()
+                 },
+                {
+                    "name" : "Is a Honeypot?",
+                    "value" : honeypot_api_call.honeypot_result.unwrap().is_honeypot.to_string()
 
-               },
-              {
-                  "name" : "BuyTax",
-                  "value" : format!("{}%",honeypot_response.simulation_result.buy_tax.to_string()),
-                  "inline" : true
+                 },
+                {
+                    "name" : "BuyTax",
+                    "value" : format!("{}%",honeypot_api_call.simulation_result.buy_tax.to_string()),
+                    "inline" : true
 
-               },
-              {
-                  "name" : "SellTax",
-                  "value" : format!("{}%",honeypot_response.simulation_result.sell_tax.to_string()),
-                  "inline" : true
+                 },
+                {
+                    "name" : "SellTax",
+                    "value" : format!("{}%",honeypot_api_call.simulation_result.sell_tax.to_string()),
+                    "inline" : true
 
-               }
-                  ]
+                 }
+                    ]
 
 
-              }]
-      })
-    .to_string();
-    let response = client
-        .post(&webhook)
-        .header("Content-type", "application/json")
-        .body(json.to_owned())
-        .send()
-        .await?;
-    println!("{:?}",response);
-    Ok(())
+          }]
+        })
+        .to_string();
+            let response = reqwest::Client::new()
+                .post(&webhook)
+                .header("Content-type", "application/json")
+                .body(json.to_owned())
+                .send()
+                .await?;
+            println!("{:?}", response.status());
+            Ok(())
+    }
 }
