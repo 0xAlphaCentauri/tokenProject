@@ -21,7 +21,6 @@ pub struct HoneypotResponse {
     pub simulation_success: bool,
     pub honeypot_result: Option<HoneypotResult>,
     pub simulation_result: Option<SimulationResult>,
-    pub holder_analysis: HolderAnalysis,
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Deserialize)]
@@ -38,11 +37,6 @@ pub struct SimulationResult {
     pub transfer_tax: f64,
 }
 
-#[derive(Default, Debug, Clone, PartialEq, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct HolderAnalysis {
-    pub holders: String,
-}
 
 pub async fn send_webhook(
     token_name: String,
