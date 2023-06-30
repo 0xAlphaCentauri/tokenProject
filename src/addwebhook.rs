@@ -20,7 +20,7 @@ pub struct ResultEtherscan {
 pub struct HoneypotResponse {
     pub simulation_success: bool,
     pub honeypot_result: Option<HoneypotResult>,
-    pub simulation_result: SimulationResult,
+    pub simulation_result: Option<SimulationResult>,
     pub holder_analysis: HolderAnalysis,
 }
 
@@ -104,13 +104,13 @@ pub async fn send_webhook(
                  },
                 {
                     "name" : "BuyTax",
-                    "value" : format!("{}%",honeypot_api_call.simulation_result.buy_tax.to_string()),
+                    "value" : format!("{}%",honeypot_api_call.simulation_result.as_ref().unwrap().buy_tax.to_string()),
                     "inline" : true
 
                  },
                 {
                     "name" : "SellTax",
-                    "value" : format!("{}%",honeypot_api_call.simulation_result.sell_tax.to_string()),
+                    "value" : format!("{}%",honeypot_api_call.simulation_result.as_ref().unwrap().sell_tax.to_string()),
                     "inline" : true
 
                  }
