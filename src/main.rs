@@ -36,7 +36,7 @@ const WETH_ADDRESS: &str = "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2";
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let provider = Provider::<Http>::try_from(HTTP_URL)?;
     let provider = Arc::new(provider);
-    //let block_number: U64 = provider.get_block_number().await?;
+    let block_number: U64 = provider.get_block_number().await?;
     // let mut file = File::open("blocknumber.txt")?;
     // let mut contents = String::new();
     // file.read_to_string(&mut contents)?;
@@ -50,7 +50,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let address: Address = UNISWAP_FACTORY.parse()?;
     let filter = Filter::new()
         .address(address)
-        .event("PairCreated(address,address,address,uint256)");
+        .event("PairCreated(address,address,address,uint256)")
+        .from_block(block_number) ;
     let logs = provider.get_logs(&filter).await?;
     for log in logs.iter() {
         let token0 = Address::from(log.topics[1]);
