@@ -4,7 +4,6 @@ use ethers::{
     providers::{Http, Provider},
     utils::format_units,
 };
-//use std::{fs::File, io::{Read, Write}};
 use eyre::Result;
 use std::sync::Arc;
 use std::{thread, time::Duration};
@@ -39,16 +38,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let provider = Provider::<Http>::try_from(HTTP_URL).unwrap();
         let provider = Arc::new(provider);
         let block_number: U64 = provider.get_block_number().await.unwrap();
-        // let mut file = File::open("blocknumber.txt").unwrap();
-        // let mut contents = String::new();
-        // file.read_to_string(&mut contents).unwrap();
-        // if contents == block_number.to_string(){
-        //     println!("We are polling the same block");
-        //     std::process::exit(1);
-
-        // }
-        // TO-DO  - get proper error propagation over at functions and refactor below If statements ,
-        // this looks to be sendable via a function
         let address: Address = UNISWAP_FACTORY.parse().unwrap();
         let filter = Filter::new()
             .address(address)

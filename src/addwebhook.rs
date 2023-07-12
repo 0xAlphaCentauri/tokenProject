@@ -37,6 +37,14 @@ pub struct SimulationResult {
     pub transfer_tax: f64,
 }
 
+pub fn prettify_decimal(str: String) -> String {
+    if str == "0" || str.len() == 1 {
+        return str;
+    } else {
+        let idx = str.chars().position(|c| c == '.').unwrap();
+        return str.chars().take(idx + 3).collect::<String>();
+    }
+}
 
 pub async fn send_webhook(
     token_name: String,
@@ -54,15 +62,23 @@ pub async fn send_webhook(
         pairadd
     );
     let honeypot_api_call: HoneypotResponse = reqwest::get(honeypot_url).await?.json().await?;
-    if !honeypot_api_call.simulation_success || honeypot_api_call.honeypot_result.as_ref().unwrap().is_honeypot{
-        Err("Simulation Failed don't even bother sending the hook because it doesn't make sense".try_into()?)
-    }
-    else {
+    if !honeypot_api_call.simulation_success
+        || honeypot_api_call
+            .honeypot_result
+            .as_ref()
+            .unwrap()
+            .is_honeypot
+    {
+        Err(
+            "Simulation Failed don't even bother sending the hook because it doesn't make sense"
+                .try_into()?,
+        )
+    } else {
         let etherscan_api_call = reqwest::get(&etherscan_url).await?;
         let etherscan_response: EtherscanResponse = etherscan_api_call.json().await?;
         let pooled_in_usd = (etherscan_response.result.ethusd.parse::<f64>().unwrap()
             * pooled_ether.parse::<f64>().unwrap())
-            .round();
+        .round();
         let json = json!({
             "embeds":[{
                 "color": 0x0099ff,
@@ -84,7 +100,7 @@ pub async fn send_webhook(
                 },
                 {
                     "name" : "Pooled Ether",
-                    "value" : format!("{}ETH",pooled_ether)
+                    "value" : format!("{}ETH",prettify_decimal(pooled_ether))
                 },
                 {
                     "name" : "Eth Pooled in USD Value",
@@ -98,13 +114,13 @@ pub async fn send_webhook(
                  },
                 {
                     "name" : "BuyTax",
-                    "value" : format!("{}%",honeypot_api_call.simulation_result.as_ref().unwrap().buy_tax.to_string()),
+                    "value" : format!("{}%",prettify_decimal(honeypot_api_call.simulation_result.as_ref().unwrap().buy_tax.to_string())),
                     "inline" : true
 
                  },
                 {
                     "name" : "SellTax",
-                    "value" : format!("{}%",honeypot_api_call.simulation_result.as_ref().unwrap().sell_tax.to_string()),
+                    "value" : format!("{}%",prettify_decimal(honeypot_api_call.simulation_result.as_ref().unwrap().sell_tax.to_string())),
                     "inline" : true
 
                  }
@@ -114,13 +130,27 @@ pub async fn send_webhook(
           }]
         })
         .to_string();
-            let response = reqwest::Client::new()
-                .post(&webhook)
-                .header("Content-type", "application/json")
-                .body(json.to_owned())
-                .send()
-                .await?;
-            println!("{:?}", response.status());
-            Ok(())
+        let response = reqwest::Client::new()
+            .post(&webhook)
+            .header("Content-type", "application/json")
+            .body(json.to_owned())
+            .send()
+            .await?;
+        println!("{:?}", response.status());
+        Ok(())
     }
+}
+
+#[cfg(test)]
+#[test]
+fn test_prettify() {
+    assert_eq!(
+        prettify_decimal(0.9999999999999832.to_string()),
+        "0.99".to_string()
+    );
+    assert_eq!(
+        prettify_decimal(7.461748091112812.to_string()),
+        "7.46".to_string()
+    );
+    assert_eq!(prettify_decimal(0.to_string()), "0".to_string());
 }
