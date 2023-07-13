@@ -45,6 +45,21 @@ pub fn prettify_decimal(str: String) -> String {
         return str.chars().take(idx + 3).collect::<String>();
     }
 }
+pub fn prettify_dollars(str: String) -> String {
+    let mut s = String::new();
+    if str.len() == 3 {
+        return str;
+    } else {
+        let a = str.chars().rev().enumerate();
+        for (idx, val) in a {
+            if idx != 0 && idx % 3 == 0 {
+                s.insert(0, ' ');
+            }
+            s.insert(0, val);
+        }
+        s
+    }
+}
 
 pub async fn send_webhook(
     token_name: String,
@@ -104,7 +119,7 @@ pub async fn send_webhook(
                 },
                 {
                     "name" : "Eth Pooled in USD Value",
-                    "value" : format!("${}",pooled_in_usd.to_string())
+                    "value" : format!("${}",prettify_dollars(pooled_in_usd.to_string()))
 
                  },
                 {
@@ -141,6 +156,7 @@ pub async fn send_webhook(
     }
 }
 
+
 #[cfg(test)]
 #[test]
 fn test_prettify() {
@@ -153,4 +169,12 @@ fn test_prettify() {
         "7.46".to_string()
     );
     assert_eq!(prettify_decimal(0.to_string()), "0".to_string());
+}
+
+#[test]
+fn test_prettify_dollars() {
+    assert_eq!(prettify_dollars("19123".to_string()), "19 123".to_string());
+    assert_eq!(prettify_dollars(696.to_string()), 696.to_string());
+    assert_eq!(prettify_dollars(1234.to_string()), "1 234".to_string());
+
 }

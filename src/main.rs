@@ -51,6 +51,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             let weth_address: Address = WETH_ADDRESS.parse().unwrap();
             let pairadd = Address::from(&log.data[12..32].try_into()?);
             let pair_contract = UniswapPair::new(pairadd, provider.clone());
+            //TODO - Ignore below 1 ETH
             if token0 == weth_address {
                 let liq = pair_contract.get_reserves().await.unwrap();
                 let liq_0 = format_units(U256::from(liq.0), "ether").unwrap();
