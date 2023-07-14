@@ -41,7 +41,7 @@ pub fn prettify_decimal(str: String) -> String {
     if str == "0" || str.len() == 1 {
         return str;
     } else {
-        let idx = str.chars().position(|c| c == '.').unwrap();
+        let idx = str.chars().position(|c| c == '.').unwrap_or(0);
         return str.chars().take(idx + 3).collect::<String>();
     }
 }
@@ -145,6 +145,7 @@ pub async fn send_webhook(
           }]
         })
         .to_string();
+        println!("Sending {:?}", json);
         let response = reqwest::Client::new()
             .post(&webhook)
             .header("Content-type", "application/json")
@@ -168,6 +169,10 @@ fn test_prettify() {
         "7.46".to_string()
     );
     assert_eq!(prettify_decimal(0.to_string()), "0".to_string());
+    assert_eq!(
+        prettify_decimal(2.001240998420113656.to_string()),
+        "2.00".to_string()
+    );
 }
 
 #[test]
