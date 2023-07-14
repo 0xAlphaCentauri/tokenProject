@@ -156,7 +156,6 @@ pub async fn send_webhook(
     }
 }
 
-
 #[cfg(test)]
 #[test]
 fn test_prettify() {
@@ -176,5 +175,4 @@ fn test_prettify_dollars() {
     assert_eq!(prettify_dollars("19123".to_string()), "19 123".to_string());
     assert_eq!(prettify_dollars(696.to_string()), 696.to_string());
     assert_eq!(prettify_dollars(1234.to_string()), "1 234".to_string());
-
 }
