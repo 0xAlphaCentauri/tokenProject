@@ -10,6 +10,8 @@ mod addwebhook;
 use addwebhook::send_webhook;
 use ethers_contract::{abigen, providers::Middleware};
 use std::sync::Arc;
+use chrono::{Local};
+
 abigen!(
     UniswapFactory,
     r#"[
@@ -59,8 +61,8 @@ pub async fn pair_create_monitor(
             let token1_contract = ERC20::new(token1, provider.clone());
             let token1_symbol: String = token1_contract.symbol().await.unwrap();
             println!(
-                "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH",
-                &token1_symbol, pairadd, liq_0
+                "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH at {:?}",
+                &token1_symbol, pairadd, liq_0, Local::now()
             );
             if send_webhook(token1_symbol.clone(), pairadd, liq_0.clone())
                 .await
@@ -77,8 +79,8 @@ pub async fn pair_create_monitor(
             let token0_contract = ERC20::new(token0, provider.clone());
             let token0_symbol: String = token0_contract.symbol().await.unwrap();
             println!(
-                "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH",
-                &token0_symbol, pairadd, liq_1
+                "New Pair Detected {:?}/WETH at {:?} with {:?}ETH pooled ETH @ {}",
+                &token0_symbol, pairadd, liq_1, Local::now()
             );
             if send_webhook(token0_symbol.clone(), pairadd, liq_1.clone())
                 .await
@@ -90,3 +92,6 @@ pub async fn pair_create_monitor(
     }
     Ok(())
 }
+
+// Need to trigger a contract event, send it to test net. Time from contract begin to execution of this how long it takes
+// likely need to know pending blocks, see when liquidity is being added and use same gas to get on the same block
